@@ -313,21 +313,24 @@ function EventScreen({ ctx, eid, go }) {
 
 function AddTask({ open, onClose, ctx, eid, members, reload }) {
   const [title, setTitle] = useState('');
+  const [desc, setDesc] = useState('');
   const [size, setSize] = useState('medium');
   const [who, setWho] = useState('open');
   const EX = { small: 'Under 30 minutes', medium: 'An hour or two', big: 'Half a day or more' };
   const save = async () => {
     const assignee = who === 'me' ? ctx.uid : who === 'open' ? null : who;
-    const { data, error } = await supabase.from('tasks').insert({ event_id: eid, title: title.trim(), effort_size: size, status: assignee ? 'in_progress' : 'open', created_by: ctx.uid }).select().single();
+    const { data, error } = await supabase.from('tasks').insert({ event_id: eid, title: title.trim(), description: desc.trim() || null, effort_size: size, status: assignee ? 'in_progress' : 'open', created_by: ctx.uid }).select().single();
     if (error) return Alert.alert('Could not add the task', error.message);
     if (assignee) await supabase.from('task_assignees').insert({ task_id: data.id, user_id: assignee });
     ctx.log('task_created', 'event', { effort_size: size, claimed: !!assignee });
-    setTitle(''); setSize('medium'); setWho('open'); onClose(); reload();
+    setTitle(''); setDesc(''); setSize('medium'); setWho('open'); onClose(); reload();
   };
   return (
     <Sheet open={open} onClose={onClose}>
       <Text style={s.h2}>Add a task</Text>
       <TextInput style={s.input} value={title} onChangeText={setTitle} placeholder="Book the rooftop" />
+      <Text style={s.label}>Description (optional)</Text>
+      <TextInput style={[s.input, s.textarea]} value={desc} onChangeText={setDesc} placeholder="Add details if a one-line title isn't enough" multiline />
       <Text style={s.label}>How big is it?</Text>
       <View style={s.row}>{SIZES.map((z) => <Chip key={z} t={cap(z)} on={size === z} onPress={() => setSize(z)} />)}</View>
       <Text style={s.small}>{cap(size)}: {EX[size]}</Text>
@@ -473,6 +476,7 @@ function TaskScreen({ ctx, eid, tid, go }) {
       <ScrollView contentContainerStyle={s.pad}>
         <Pressable onPress={() => go({ name: 'event', eid })}><Text style={s.back}>‹ Back</Text></Pressable>
         <H t={t.title} sub={`${cap(t.effort_size)} · ${cap(t.status.replace('_', ' '))}`} />
+        {t.description ? <Card><Text style={s.mute}>{t.description}</Text></Card> : null}
         <Card>
           <Text style={s.bold}>{t.assignees.length ? `${t.assignees.map(nameOf).join(' and ')} on this` : 'Nobody has claimed this yet'}</Text>
         </Card>
@@ -533,6 +537,7 @@ const s = StyleSheet.create({
   chipOn: { backgroundColor: C.green, borderColor: C.green }, chipT: { color: C.ink, fontWeight: '500' },
   dot: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#7FAE92', alignItems: 'center', justifyContent: 'center' }, dotT: { color: '#fff', fontWeight: '700' },
   input: { backgroundColor: '#fff', borderWidth: 1, borderColor: C.line, borderRadius: 10, padding: 12, fontSize: 15, color: C.ink },
+  textarea: { minHeight: 80, textAlignVertical: 'top' },
   warnBox: { backgroundColor: C.warn, borderRadius: 10, padding: 12 },
   opt: { backgroundColor: C.bg, borderRadius: 12, padding: 14, marginTop: 10, gap: 2 },
   scrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },

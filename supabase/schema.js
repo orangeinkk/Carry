@@ -3,7 +3,7 @@
 create table users (id uuid primary key references auth.users on delete cascade, display_name text not null, created_at timestamptz default now());
 create table events (id uuid primary key default gen_random_uuid(), title text not null, starts_at timestamptz, place text, invite_code text unique not null, created_by uuid references users(id), created_at timestamptz default now());
 create table event_members (event_id uuid references events on delete cascade, user_id uuid references users on delete cascade, joined_at timestamptz default now(), primary key (event_id, user_id));
-create table tasks (id uuid primary key default gen_random_uuid(), event_id uuid not null references events on delete cascade, title text not null,
+create table tasks (id uuid primary key default gen_random_uuid(), event_id uuid not null references events on delete cascade, title text not null, description text,
   effort_size text not null default 'medium' check (effort_size in ('small','medium','big')),
   status text not null default 'open' check (status in ('open','in_progress','done')),
   created_by uuid references users(id), created_at timestamptz default now());
